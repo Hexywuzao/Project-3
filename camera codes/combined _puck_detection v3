@@ -5,7 +5,7 @@ import time
 
 print("Starting puck detection V3...")
 
-//py puck_detection_v3.py//
+# Run in terminal: py puck_detection_v3.py
 
 # =========================
 # Camera setup
