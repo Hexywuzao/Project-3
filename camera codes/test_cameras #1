@@ -1,0 +1,31 @@
+
+import cv2
+
+print("Checking connected cameras...")
+
+for i in range(10):
+
+    cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+
+    if cap.isOpened():
+
+        ret, frame = cap.read()
+
+        if ret:
+            print(f"Camera {i}: WORKING")
+
+            cv2.imshow(f"Camera {i}", frame)
+            cv2.waitKey(1500)
+            cv2.destroyAllWindows()
+
+        else:
+            print(f"Camera {i}: Opened but no image")
+
+        cap.release()
+
+    else:
+        print(f"Camera {i}: Not available")
+
+cv2.destroyAllWindows()
+
+print("Camera test finished!")
