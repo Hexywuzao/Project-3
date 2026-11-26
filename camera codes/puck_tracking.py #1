@@ -1,0 +1,109 @@
+
+import cv2
+import numpy as np
+
+print("Starting puck speed detection...")
+
+cap = cv2.VideoCapture("conveyor.mp4")
+
+if not cap.isOpened():
+    print("Cannot open video!")
+    exit()
+
+fps = cap.get(cv2.CAP_PROP_FPS)
+
+background = cv2.createBackgroundSubtractorMOG2(
+    history=200,
+    varThreshold=40,
+    detectShadows=False
+)
+
+previous_y = None
+previous_time = None
+
+frame_number = 0
+
+while True:
+
+    ret, frame = cap.read()
+
+    if not ret:
+        break
+
+    current_time = frame_number / fps
+
+    mask = background.apply(frame)
+
+    kernel = np.ones((5, 5), np.uint8)
+
+    mask = cv2.morphologyEx(
+        mask,
+        cv2.MORPH_OPEN,
+        kernel
+    )
+
+    contours, _ = cv2.findContours(
+        mask,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    for contour in contours:
+
+        if cv2.contourArea(contour) > 200:
+
+            M = cv2.moments(contour)
+
+            if M["m00"] != 0:
+
+                x = int(M["m10"] / M["m00"])
+                y = int(M["m01"] / M["m00"])
+
+                if previous_y is not None:
+
+                    time_difference = current_time - previous_time
+
+                    if time_difference > 0:
+
+                        pixel_speed = abs(y - previous_y) / time_difference
+
+                        print(
+                            "Y position:", y,
+                            "| Speed:",
+                            round(pixel_speed, 2),
+                            "pixels/second"
+                        )
+
+                        cv2.putText(
+                            frame,
+                            f"Speed: {pixel_speed:.1f} px/s",
+                            (x + 10, y - 15),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (0, 255, 0),
+                            2
+                        )
+
+                previous_y = y
+                previous_time = current_time
+
+                cv2.circle(
+                    frame,
+                    (x, y),
+                    5,
+                    (0, 255, 0),
+                    -1
+                )
+
+    cv2.imshow("Puck Speed Detection", frame)
+    cv2.imshow("Motion Mask", mask)
+
+    if cv2.waitKey(30) & 0xFF == ord('q'):
+        break
+
+    frame_number += 1
+
+cap.release()
+cv2.destroyAllWindows()
+
+print("Speed detection finished!")
