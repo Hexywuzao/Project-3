@@ -1,0 +1,59 @@
+
+
+import cv2
+
+
+cap = cv2.VideoCapture("conveyor.mp4")
+
+
+if not cap.isOpened():
+    print("Cannot open video!")
+    exit()
+
+
+ret, frame = cap.read()
+
+
+if ret:
+
+
+    # Original image
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+
+    # Increase contrast
+    enhanced = cv2.convertScaleAbs(
+        gray,
+        alpha=2.0,
+        beta=-50
+    )
+
+
+    # Apply adaptive thresholding
+    threshold = cv2.adaptiveThreshold(
+        enhanced,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        5
+    )
+
+
+    cv2.imshow("1 - Original", frame)
+    cv2.imshow("2 - High Contrast", enhanced)
+    cv2.imshow("3 - Black and White", threshold)
+
+
+    print("Compare all three windows.")
+    print("Press any key to close.")
+
+
+    cv2.waitKey(0)
+
+
+cap.release()
+cv2.destroyAllWindows()
+
+
+
