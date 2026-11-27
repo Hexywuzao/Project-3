@@ -1,0 +1,130 @@
+
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
+#define SERVICE_UUID "12345678-1234-1234-1234-123456789abc"
+#define CHARACTERISTIC_UUID "12345678-1234-1234-1234-123456789abd"
+
+BLECharacteristic *pCharacteristic;
+
+// =========================
+// BLE connection callbacks
+// =========================
+
+class ServerCallbacks : public BLEServerCallbacks {
+
+  void onConnect(BLEServer *pServer) {
+    Serial.println("BLE connected");
+  }
+
+  void onDisconnect(BLEServer *pServer) {
+    Serial.println("BLE disconnected");
+    BLEDevice::startAdvertising();
+  }
+};
+
+// =========================
+// Receive colour commands
+// =========================
+
+class CommandCallbacks : public BLECharacteristicCallbacks {
+
+  void onWrite(BLECharacteristic *pCharacteristic) {
+
+    String command = pCharacteristic->getValue().c_str();
+    command.trim();
+
+    String response;
+
+    if (command == "SORT_BLUE") {
+
+      response = "BLUE RECEIVED";
+
+    }
+    else if (command == "SORT_PURPLE") {
+
+      response = "PURPLE RECEIVED";
+
+    }
+    else if (command == "SORT_YELLOW") {
+
+      response = "YELLOW RECEIVED";
+
+    }
+    else {
+
+      response = "UNKNOWN COMMAND";
+
+    }
+
+    Serial.println(response);
+
+    // Send acknowledgement to Python
+    pCharacteristic->setValue(response.c_str());
+    pCharacteristic->notify();
+  }
+};
+
+// =========================
+// Setup
+// =========================
+
+void setup() {
+
+  Serial.begin(115200);
+
+  // Initialize BLE device
+  BLEDevice::init("PuckSorter");
+
+  // Create BLE server
+  BLEServer *pServer = BLEDevice::createServer();
+
+  pServer->setCallbacks(new ServerCallbacks());
+
+  // Create BLE service
+  BLEService *pService =
+    pServer->createService(SERVICE_UUID);
+
+  // Create communication characteristic
+  pCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID,
+    BLECharacteristic::PROPERTY_READ |
+    BLECharacteristic::PROPERTY_WRITE |
+    BLECharacteristic::PROPERTY_NOTIFY
+  );
+
+  pCharacteristic->addDescriptor(new BLE2902());
+
+  pCharacteristic->setCallbacks(
+    new CommandCallbacks()
+  );
+
+  pCharacteristic->setValue("READY");
+
+  // Start BLE service
+  pService->start();
+
+  // Start advertising
+  BLEAdvertising *pAdvertising =
+    BLEDevice::getAdvertising();
+
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+
+  BLEDevice::startAdvertising();
+
+  Serial.println("PuckSorter BLE ready");
+}
+
+// =========================
+// Main loop
+// =========================
+
+void loop() {
+
+  delay(10);
+
+}
+
